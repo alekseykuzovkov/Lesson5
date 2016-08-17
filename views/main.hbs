@@ -1,0 +1,142 @@
+<html>
+<head>
+	<script src="jquery.min.js"></script>
+	<style type="text/css">
+		#tasks ul li {
+			margin-top: 10px;
+			border: 1px solid;
+		}
+	</style>
+</head>
+<body>
+	<div class="entry">
+		<h1>{{title}}</h1>
+		{{#if error}}
+		<h2>Ошибка! {{error}}</p>
+		{{/if}}
+		<div>
+			<form id="createTask" method="post">
+				<input type="text" name="task" placeholder="Текст задачи" />
+				<label for="priority">Приоритет задачи: </label>
+				<select name="priority">
+					<option value="1">1</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+				</select>
+				<input type="submit" /> 
+			</form>
+
+			<form id="editTask" method="post" style="display:none">
+				<input type="hidden" name="change" value="0">
+				<input type="text" name="task" placeholder="Текст задачи" />
+				<label for="priority">Приоритет задачи: </label>
+				<select name="priority">
+					<option value="1">1</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+				</select>
+				<input type="submit" /> 
+			</form>
+			<a href="#" id="cancelEdit" style="display:none">Отменить редактирование</a>
+		</div>
+		<div id="tasks">
+			<ul></ul>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		$(document).ready(function() {
+			var reloadTasks = function() {
+				$.get('http://localhost:3000/api/list').done(function(data) {
+					try {
+						var result = $.parseJSON(data);
+						$("#tasks ul").html("");
+						result.forEach(function(task) {
+							var deleteA = document.createElement('a');
+							$(deleteA).attr("href", task.id);
+							$(deleteA).addClass("deleteTask");
+							$(deleteA).html("Удалить");
+
+							$(deleteA).click(function() {
+								$.post('http://localhost:3000/api', {"delete":$(this).attr('href')}).done(function(data) {
+									console.log("task deleted");
+									reloadTasks();
+								});
+								return false;
+							});
+
+							var editA = document.createElement('a');
+							$(editA).attr("href", task.id);
+							$(editA).addClass("editTask");
+							$(editA).html("Изменить");
+							
+							$(editA).click(function() {
+								$("#createTask").hide();
+								$("#editTask").show();
+								$("#editTask input[name=task]").val(task.task);
+								$("#editTask input[name=change]").val(task.id);
+								$("#editTask select[name=priority]").val(task.priority);
+								$("#cancelEdit").show();
+								return false;
+							});
+
+							$("#cancelEdit").click(function() {
+								$("#cancelEdit").hide();
+								$("#createTask").show();
+								$("#editTask").hide();
+								return false;
+							});
+
+							$("#tasks ul").append("<li>"+task.task+", приоритет: "+task.priority);
+							$("#tasks ul").append(task.completed==1?"<p>Выполнена</p>":"<p>НЕ Выполнена</p>");
+							if (task.completed==0) {
+								var completeA = document.createElement('a');
+								$(completeA).attr("href", task.id);
+								$(completeA).addClass("editTask");
+								$(completeA).html("Выполнить");
+								$(completeA).click(function() {
+									$.post('http://localhost:3000/api', {"complete":$(this).attr('href')}).done(function(data) {
+										console.log("task completed");
+										reloadTasks();
+									});
+									return false;
+								});
+								$("#tasks ul").append("<p>");
+								$("#tasks ul").append(completeA);
+								$("#tasks ul").append("</p>");
+							}
+							$("#tasks ul").append(deleteA);
+							$("#tasks ul").append(editA);
+							$("#tasks ul").append("</li>");
+						})
+					}
+					catch(err) {
+
+					}
+				});
+			}
+
+			$("#createTask").submit(function() {
+				$.post('http://localhost:3000/api', $(this).serialize()).done(function(data) {
+					console.log("task created");
+					reloadTasks();
+				});
+				return false;
+			});
+			$("#editTask").submit(function() {
+				$.post('http://localhost:3000/api', $(this).serialize()).done(function(data) {
+					console.log("task edited");
+					$("#cancelEdit").hide();
+					$("#createTask").show();
+					$("#editTask").hide();
+					reloadTasks();
+				});
+				return false;
+			});
+			
+			
+			reloadTasks();
+		});
+	</script>
+</body>
+</html>
