@@ -9,7 +9,6 @@ module.exports = {
 				console.log(err);
 				return callback(err);
 			}
-
 			connection.query('SELECT * FROM list;', (err, rows) => {
 				if (err) {
 					console.log(err);
@@ -50,7 +49,7 @@ module.exports = {
 				return callback(err);
 			}
 
-			connection.query('UPDATE list SET task = ?, priority = ? WHERE id = ?;',[task, priority, id], (err, result) => {
+			connection.query('UPDATE list SET task = ?, priority = ?, completed = 0 WHERE id = ?;',[task, priority, id], (err, result) => {
 				if (err) {
 					console.log(err);
 					return callback(err);
